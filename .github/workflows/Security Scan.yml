@@ -1,0 +1,77 @@
+name: Security Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main # 选择你的默认分支
+
+jobs:
+  security_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.20'
+
+    - name: Setup Dependencies
+      run: sudo apt-get install libpcap-dev
+
+    - name: Cache Go
+      id: cache-go
+      uses: actions/cache@v2
+      with:
+        path: /home/runner/go
+        key: ${{ runner.os }}-go
+
+    - name: Setting up ProjectDiscovery tools
+      if: steps.cache-go.outputs.cache-hit != 'true'
+      env:
+        GO111MODULE: on
+      run: |
+        go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+      shell: bash
+
+    - name: Running ParamSpider
+      shell: bash
+      run: |
+        # 安装 ParamSpider 的依赖并运行
+        pip3 install -r ParamSpider/requirements.txt
+        chmod +x ParamSpider/run.py
+        python3 ParamSpider/run.py
+
+    - name: Running nuclei-fuzzing scan
+      run: |
+        # 使用 Nuclei 进行漏洞扫描
+        nuclei -l ParamSpider/output/output.txt -rl 300 -bs 35 -c 30 -mhe 10 -ni -t fuzzing-templates/ -stats -silent -severity critical,medium,high,low -o ParamSpider/output/vuln.txt | tee ParamSpider/output/vuln.txt
+      shell: bash
+
+    - name: Sorting the output results
+      run: |
+        # 对输出结果进行排序
+        find ParamSpider/output -type f -exec sort {} -o {} ;
+      shell: bash
+
+    - name: Create local changes
+      run: |
+        # 添加结果文件到 Git
+        git add ParamSpider/output/vuln.txt
+      shell: bash
+
+    - name: Commit results to Github
+      run: |
+        # 提交结果到 GitHub
+        git config --local user.email "j.oejoequte@gmail.com"
+        git config --global user.name "joejoequte"
+        git commit -m "Nuclei Report" -a --allow-empty
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
