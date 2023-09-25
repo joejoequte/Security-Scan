@@ -14,6 +14,11 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v2
 
+    - name: Set GOPATH
+      run: |
+        echo 'export GOPATH=$HOME/go' >> $HOME/.bashrc
+        source $HOME/.bashrc
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -27,7 +32,11 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /home/runner/go
-        key: ${{ runner.os }}-go
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+    - name: Install ParamSpider Dependencies
+        run: |
+        pip install -r ParamSpider/requirements.txt
 
     - name: Setting up ProjectDiscovery tools
       if: steps.cache-go.outputs.cache-hit != 'true'
