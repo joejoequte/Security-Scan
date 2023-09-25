@@ -37,6 +37,20 @@ jobs:
         go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
       shell: bash
 
+      - name: Install ParamSpider
+        run: |
+          git clone https://github.com/0xKayala/ParamSpider.git
+          cd ParamSpider
+          pip install -r requirements.txt
+          chmod +x paramspider.py
+
+    - name: Install Nuclei
+      run: |
+        git clone https://github.com/projectdiscovery/nuclei.git
+        cd nuclei/v2/cmd/nuclei
+        go build
+        mv nuclei /usr/local/bin/
+      
     - name: Running ParamSpider
       shell: bash
       run: |
