@@ -35,8 +35,9 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
     - name: Install ParamSpider Dependencies
-        run: |
+      run: |
         pip install -r ParamSpider/requirements.txt
+
 
     - name: Setting up ProjectDiscovery tools
       if: steps.cache-go.outputs.cache-hit != 'true'
@@ -46,8 +47,8 @@ jobs:
         go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
       shell: bash
 
-      - name: Install ParamSpider
-        run: |
+    - name: Install ParamSpider
+      run: |
           git clone https://github.com/0xKayala/ParamSpider.git
           cd ParamSpider
           pip install -r requirements.txt
